@@ -2,6 +2,8 @@ from glob import glob
 import os
 import numpy as np
 from scipy import io
+SEED=0
+np.random.seed(SEED)
 
 def _find_diameter(n):
     if n<=100:
@@ -126,7 +128,6 @@ def get_shuffle_n_mask(l, mask_params):
     
     trainY = mask_params['trainY']
     train_diameter = mask_params['train_diameter']
-    SCREEN_LABEL = mask_params['screen_label']
     SCREEN_DIAM = mask_params['screen_diam']
     MASK_P = mask_params['mask_p']
     
@@ -135,10 +136,10 @@ def get_shuffle_n_mask(l, mask_params):
     
     while True:
         MASK = np.array([False]*l)
-        l_temp = len(MASK[(trainY!=SCREEN_LABEL)|(train_diameter!=SCREEN_DIAM)])
-        MASK[(trainY!=SCREEN_LABEL)|(train_diameter!=SCREEN_DIAM)] = np.random.choice(l_temp, l_temp, replace=False) < int(MASK_P*trainY.shape[0])
+        l_temp = len(MASK[(train_diameter!=SCREEN_DIAM)])
+        MASK[(train_diameter!=SCREEN_DIAM)] = np.random.choice(l_temp, l_temp, replace=False) < int(MASK_P*trainY.shape[0])
         if set([0,1,2,3,4,5]).issubset(set(trainY[MASK])):
-            print('SEED : %d'%SEED)
+            #print('SEED : %d'%SEED)
             break
         SEED+=1
         np.random.seed(SEED)
@@ -146,4 +147,52 @@ def get_shuffle_n_mask(l, mask_params):
     print('# of unlabeled data : %d'%(MASK.shape[0]-MASK.sum()))
     print('percentage : %.2f%%'%(100*MASK.sum()/MASK.shape[0]))
         
+    show_table(MASK, trainY, train_diameter)
     return train_shuffle, val_shuffle, MASK
+    
+def show_table(MASK=None, Y=None, D=None, func=None, average=False):
+    def count(y, d):
+        if (y==0 and d != 0) or (d==0 and y!=0) or (d==2 and y>3) or (d==4 and y>2):
+            return '-'
+        cnt = MASK[(Y==y)&(D==d)].sum()
+        return int(cnt)
+    if func is None:
+        func=count
+    vals = [[func(j,i) for j in range(6)] for i in range(5)]
+    diam = ['0"','0.007"','0.14"','0.021"','0.028"']
+    print('\n')
+    print('\t\t0\t1\t2\t3\t4\t5\t| %s'%('avg' if average else 'total'))
+    print('='*8*9)
+    for i in range(5):
+        print('%s\t|'%diam[i], end='\t')
+        for j in range(6):
+            #print('%s'%(func(j,i)), end='\t')
+            print('%s'%(str(vals[i][j])[:5]), end='\t')
+        n = sum([vals[i][j] if type(vals[i][j]) in [int, float] else 0 for j in range(6)])
+        if average:
+            denom = sum([1 if type(vals[i][j]) in [int,float] else 0 for j in range(6)])
+            
+            n=n/denom
+        print('| %s'%str(n)[:5])
+    print('-'*8*9)
+    if average:
+        print('avg\t|', end='\t')
+    else:
+        print('total\t|', end='\t')
+    ns = []
+    for j in range(6):
+        #print('%d'%(MASK[Y==j].sum()),end='\t')
+        n = sum([vals[i][j] if type(vals[i][j]) in [int, float] else 0 for i in range(5)])
+        ns.append(n)
+        if average:
+            denom = sum([1 if type(vals[i][j]) in [int,float] else 0 for i in range(5)])
+            n=n/denom#print('%s'%str(n/denom)[:5],end='\t')
+        print('%s'%str(n)[:5],end='\t') 
+    n = sum(ns)
+    if average:
+        denom = sum([1 if type(vals[i][j]) in [int,float] else 0 for i in range(5) for j in range(6)])
+        n = n/denom
+
+    print('| %s'%str(n)[:5])
+        
+        

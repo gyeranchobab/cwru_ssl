@@ -3,7 +3,13 @@ import torch.nn as nn
 import torch.optim as optim
 import time
 import numpy as np
-
+from src.utils.data_utils import show_table
+SEED=0
+np.random.seed(SEED)
+torch.manual_seed(SEED)
+torch.cuda.manual_seed(SEED)
+torch.backends.cudnn.deterministic=True
+torch.backends.cudnn.benchmark=True
 def batch_step(model, X, Y, M=None, train=False, optimizer=None):
     if M is None:
         M = torch.zeros_like(Y) == 0
@@ -12,8 +18,6 @@ def batch_step(model, X, Y, M=None, train=False, optimizer=None):
     
     pred = torch.argmax(p, dim=1)
     
-    correct = (Y[Y==pred]).shape[0]
-    wrong = (Y[Y!=pred]).shape[0]
     
     class_loss = torch.tensor(0.0).to(device=X.device)
     if M.any():
@@ -24,7 +28,7 @@ def batch_step(model, X, Y, M=None, train=False, optimizer=None):
             optimizer.step()
             optimizer.zero_grad()
     
-    return class_loss, correct, wrong
+    return class_loss, pred
     
 def epoch_step(model, data_idx, dataY, data, train=False, shuffle=None, mask=None, optimizer=None, batch_step=batch_step, device=None,batch=128,frame_len=1024):
     if shuffle is None:
@@ -41,13 +45,16 @@ def epoch_step(model, data_idx, dataY, data, train=False, shuffle=None, mask=Non
         X = np.transpose(X, [0,2,1])
         X = torch.tensor(X, device=device, dtype=torch.float)
         Y = torch.tensor(Y, device=device, dtype=torch.long)
+        Yall = Y.clone()
         if mask is None:
             M = None
         else:
             M = mask[shuffle[b*batch:(b+1)*batch]]
             M = torch.tensor(M, device=device, dtype=torch.bool)
             Y[~M]=0
-        loss, correct, wrong = batch_step(model, X, Y, train=train, optimizer=optimizer, M=M)
+        loss, pred = batch_step(model, X, Y, train=train, optimizer=optimizer, M=M)
+        correct = (Yall[Yall==pred]).shape[0]
+        wrong = (Yall[Yall!=pred]).shape[0]
         avg_loss = (avg_loss*n + loss.item()*X.shape[0])/(n+X.shape[0])
         n += X.shape[0]
         n_correct += correct
@@ -119,3 +126,43 @@ def get_latents(model, test_idx, testY, data, model_name, load_version, sav_path
     z = torch.cat(z, dim=0)
     preds = torch.cat(preds, dim=0)
     return z, preds
+    
+def score_table(diameter, **kwargs):
+    _, preds = get_latents(**kwargs)
+    preds=preds.cpu().numpy()
+    Y = kwargs['testY']
+    correct = np.array(Y==preds)
+    denoms = []
+    denoms.append([len(Y[Y==i]) for i in range(5)])
+    denoms.append([len(diameter[diameter==j]) for j in range(6)])
+    denoms.append(len(Y))
+    def score(y=None,d=None):
+        if y is None:
+            if d is None:
+                s = correct
+            else:
+                s = correct[(diameter==d)]
+        elif d is None:
+            s = correct[(Y==y)]
+        else:
+            s = correct[(Y==y) & (diameter==d)]
+        if len(s) == 0:
+            return '-'
+        else:
+            return float(sum(s)/len(s))
+
+    #vals = [[score(j,i) for j in range(6)] for i in range(5)]
+    diam = ['0"','0.007"','0.14"','0.021"','0.028"']
+    print('\n')
+    print('\t\t0\t1\t2\t3\t4\t5\t| %s'%('total'))
+    print('='*8*9)
+    for i in range(5):
+        print('%s\t|'%diam[i], end='\t')
+        for j in range(6):
+            print('%s'%(str(score(j,i))[:5]), end='\t')
+        print('| %s'%str(score(d=i))[:5])
+    print('-'*8*9)
+    print('total\t|', end='\t')
+    for j in range(6):
+        print('%s'%str(score(y=j))[:5],end='\t')
+    print('| %s'%str(score())[:5])
