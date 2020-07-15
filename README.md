@@ -6,3 +6,10 @@
 --> Unzip to ./data/
 
 [Dataset description](https://csegroups.case.edu/bearingdatacenter/pages/welcome-case-western-reserve-university-bearing-data-center-website)
+
+
+## TBD:
+- requirements
+- comment
+- markdown
+- explanation on samples
