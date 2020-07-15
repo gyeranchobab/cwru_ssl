@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 import time
 import numpy as np
+import matplotlib.pyplot as plt
 from src.utils.data_utils import show_table
 SEED=0
 np.random.seed(SEED)
@@ -166,3 +167,19 @@ def score_table(diameter, **kwargs):
     for j in range(6):
         print('%s'%str(score(y=j))[:5],end='\t')
     print('| %s'%str(score())[:5])
+    
+def confusion_matrix(**kwargs):
+    _, preds = get_latents(**kwargs)
+    preds = preds.cpu().numpy()
+    Y = kwargs['testY']
+    matrix = [[len(Y[(Y==i) & (preds==j)]) for i in range(6)] for j in range(6)]
+    
+    fig, ax = plt.subplots()
+    im = ax.imshow(matrix, cmap='viridis')
+    ax.set_xlabel('True')
+    ax.set_ylabel('Pred')
+    for i in range(6):
+        for j in range(6):
+            text = ax.text(j, i, matrix[i][j], ha='center', va='center', color='w')
+    fig.tight_layout()
+    plt.show()

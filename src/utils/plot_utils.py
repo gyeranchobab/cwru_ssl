@@ -68,3 +68,4 @@ def draw_magic(tsne, label, raw, index, cmap = None, frame_len=1024, frame_intv=
     cid2 = fig.canvas.mpl_connect('key_press_event', onpress)
     draw_plot(tsne, label[m], cmap, legend=False, ax=ax0)
     plt.show()
+    
