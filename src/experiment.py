@@ -63,7 +63,7 @@ def epoch_step(model, data_idx, dataY, data, train=False, shuffle=None, mask=Non
     return avg_loss, n_correct/(n_correct+n_wrong)
 
 def train(model, optimizer, train_idx, trainY, data, model_name, train_shuffle, val_shuffle, mask=None, batch_step=batch_step, sav_intv=10, tol=10, sav_path = './', device=None, epoch=500, batch=128,frame_len=1024):
-    best_eval = float('inf')
+    best_acc = 0# float('inf')
     for e in range(epoch):
         timestamp = time.time()
         
@@ -77,8 +77,8 @@ def train(model, optimizer, train_idx, trainY, data, model_name, train_shuffle, 
         print('\t(train) loss : %.5f,\tacc : %.5f'%(train_loss, train_acc))
         print('\t(eval) loss : %.5f,\tacc : %.5f'%(eval_loss, eval_acc))
         
-        if eval_loss < best_eval:
-            best_eval = eval_loss
+        if eval_acc > best_acc:
+            best_acc = eval_acc
             patience = 0
             torch.save(model.state_dict(), '%s/%s_best.pth'%(sav_path, model_name))
         if e%sav_intv == sav_intv-1:
