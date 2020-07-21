@@ -11,7 +11,7 @@ torch.manual_seed(SEED)
 torch.cuda.manual_seed(SEED)
 torch.backends.cudnn.deterministic=True
 torch.backends.cudnn.benchmark=True
-def batch_step(model, X, Y, M=None, train=False, optimizer=None):
+def batch_step(model, X, Y, M=None, train=False, optimizer=None, step=[0,0]):
     if M is None:
         M = torch.zeros_like(Y) == 0
         M = M.to(device=X.device, dtype=torch.bool)
@@ -31,7 +31,7 @@ def batch_step(model, X, Y, M=None, train=False, optimizer=None):
     
     return class_loss, pred
     
-def epoch_step(model, data_idx, dataY, data, train=False, shuffle=None, mask=None, optimizer=None, batch_step=batch_step, device=None,batch=128,frame_len=1024):
+def epoch_step(model, data_idx, dataY, data, train=False, shuffle=None, mask=None, optimizer=None, batch_step=batch_step, device=None,batch=128,frame_len=1024, e=0):
     if shuffle is None:
         shuffle = np.arange(data_idx.shape[0])
     if device is None:
@@ -53,7 +53,7 @@ def epoch_step(model, data_idx, dataY, data, train=False, shuffle=None, mask=Non
             M = mask[shuffle[b*batch:(b+1)*batch]]
             M = torch.tensor(M, device=device, dtype=torch.bool)
             Y[~M]=0
-        loss, pred = batch_step(model, X, Y, train=train, optimizer=optimizer, M=M)
+        loss, pred = batch_step(model, X, Y, train=train, optimizer=optimizer, M=M, step=[e,b])
         correct = (Yall[Yall==pred]).shape[0]
         wrong = (Yall[Yall!=pred]).shape[0]
         avg_loss = (avg_loss*n + loss.item()*X.shape[0])/(n+X.shape[0])
@@ -68,10 +68,10 @@ def train(model, optimizer, train_idx, trainY, data, model_name, train_shuffle, 
         timestamp = time.time()
         
         model.train()
-        train_loss, train_acc = epoch_step(model, train_idx, trainY, data, train=True, optimizer=optimizer, shuffle=train_shuffle, mask=mask, device=device, batch=batch,frame_len=frame_len,batch_step=batch_step)
+        train_loss, train_acc = epoch_step(model, train_idx, trainY, data, train=True, optimizer=optimizer, shuffle=train_shuffle, mask=mask, device=device, batch=batch,frame_len=frame_len,batch_step=batch_step, e=e)
         model.eval()
         with torch.no_grad():
-            eval_loss, eval_acc = epoch_step(model, train_idx, trainY, data, train=False, shuffle=val_shuffle, mask=mask, device=device, batch=batch,frame_len=frame_len,batch_step=batch_step)
+            eval_loss, eval_acc = epoch_step(model, train_idx, trainY, data, train=False, shuffle=val_shuffle, mask=mask, device=device, batch=batch,frame_len=frame_len,batch_step=batch_step, e=e)
         
         print('(%.2fs)[Epoch %d]'%(time.time()-timestamp, e+1))
         print('\t(train) loss : %.5f,\tacc : %.5f'%(train_loss, train_acc))
