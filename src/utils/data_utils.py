@@ -139,7 +139,6 @@ def get_shuffle_n_mask(l, mask_params):
         l_temp = len(MASK[(train_diameter!=SCREEN_DIAM)])
         MASK[(train_diameter!=SCREEN_DIAM)] = np.random.choice(l_temp, l_temp, replace=False) < int(MASK_P*trainY.shape[0])
         if set([0,1,2,3,4,5]).issubset(set(trainY[MASK])):
-            #print('SEED : %d'%SEED)
             break
         SEED+=1
         np.random.seed(SEED)
@@ -166,7 +165,6 @@ def show_table(MASK=None, Y=None, D=None, func=None, average=False):
     for i in range(5):
         print('%s\t|'%diam[i], end='\t')
         for j in range(6):
-            #print('%s'%(func(j,i)), end='\t')
             print('%s'%(str(vals[i][j])[:5]), end='\t')
         n = sum([vals[i][j] if type(vals[i][j]) in [int, float] else 0 for j in range(6)])
         if average:
@@ -181,12 +179,11 @@ def show_table(MASK=None, Y=None, D=None, func=None, average=False):
         print('total\t|', end='\t')
     ns = []
     for j in range(6):
-        #print('%d'%(MASK[Y==j].sum()),end='\t')
         n = sum([vals[i][j] if type(vals[i][j]) in [int, float] else 0 for i in range(5)])
         ns.append(n)
         if average:
             denom = sum([1 if type(vals[i][j]) in [int,float] else 0 for i in range(5)])
-            n=n/denom#print('%s'%str(n/denom)[:5],end='\t')
+            n=n/denom
         print('%s'%str(n)[:5],end='\t') 
     n = sum(ns)
     if average:
