@@ -128,7 +128,7 @@ def get_shuffle_n_mask(l, mask_params):
     
     trainY = mask_params['trainY']
     train_diameter = mask_params['train_diameter']
-    SCREEN_DIAM = mask_params['screen_diam']
+    
     MASK_P = mask_params['mask_p']
     
     SEED=0
@@ -136,8 +136,8 @@ def get_shuffle_n_mask(l, mask_params):
     
     while True:
         MASK = np.array([False]*l)
-        l_temp = len(MASK[(train_diameter!=SCREEN_DIAM)])
-        MASK[(train_diameter!=SCREEN_DIAM)] = np.random.choice(l_temp, l_temp, replace=False) < int(MASK_P*trainY.shape[0])
+        
+        MASK = np.random.choice(MASK.shape[0], MASK.shape[0], replace=False) < int(MASK_P*trainY.shape[0])
         if set([0,1,2,3,4,5]).issubset(set(trainY[MASK])):
             break
         SEED+=1
